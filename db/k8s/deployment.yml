@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tanuja-deployment-db
+  labels:
+    app: tanuja-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tanuja-db
+  template:
+    metadata:
+      labels:
+        app: tanuja-db
+    spec:
+      containers:
+      - name: tanuja-db
+        image: docker.io/library/db:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432

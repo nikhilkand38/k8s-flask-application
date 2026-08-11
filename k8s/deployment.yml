@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tanuja-deployment
+  labels:
+    app: tanuja
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tanuja
+  template:
+    metadata:
+      labels:
+        app: tanuja
+    spec:
+      containers:
+      - name: tanuja-cont
+        image: docker.io/library/tanuja-build:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
