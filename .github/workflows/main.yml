@@ -27,10 +27,8 @@ jobs:
         run: docker build -t db:latest ./db
 
       - name: Create Kind cluster
-        uses: helm/kind-action@v1
-        with:
-          cluster_name: dev-cluster
-          skipCleanup: true
+        run: |
+          kind create cluster --name dev-cluster --config k8s/kind.yml
 
       - name: Load images into Kind
         run: |
