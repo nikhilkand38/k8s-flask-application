@@ -1,0 +1,88 @@
+name: CI/CD for Flask App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: tanuja
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Flask app image
+        run: docker build -t tanuja-build:latest .
+
+      - name: Build database image
+        run: docker build -t db:latest ./db
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: dev-cluster
+
+      - name: Load images into Kind
+        run: |
+          kind load docker-image tanuja-build:latest --name dev-cluster
+          kind load docker-image db:latest --name dev-cluster
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/deployment.yml
+          kubectl apply -f k8s/service.yml
+          kubectl apply -f db/k8s/deployment.yml
+          kubectl apply -f db/k8s/service.yml
+
+      - name: Wait for deployments to be ready
+        run: |
+          kubectl rollout status deployment/tanuja-deployment --timeout=180s
+          kubectl rollout status deployment/tanuja-deployment-db --timeout=180s
+
+      - name: Verify app endpoints
+        run: |
+          EC2_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || true)
+          if [ -z "$EC2_IP" ]; then
+            EC2_IP=$(hostname -I | awk '{print $1}')
+          fi
+          echo "Using EC2 IP: $EC2_IP"
+
+          kubectl port-forward service/tanuja-service 30080:5000 --address=0.0.0.0 >/tmp/tanuja-port-forward.log 2>&1 &
+          for i in {1..20}; do
+            if curl -sf "http://$EC2_IP:30080/health" >/tmp/health-check.json 2>/dev/null; then
+              echo "Health check passed"
+              break
+            fi
+            sleep 3
+          done
+
+          if ! curl -sf "http://$EC2_IP:30080/users" >/tmp/users-check.json 2>/dev/null; then
+            echo "Users API check failed"
+            cat /tmp/tanuja-port-forward.log
+            exit 1
+          fi
+
+          echo "Users API check passed"
+          echo "Health response:"
+          cat /tmp/health-check.json
+          echo "Users response:"
+          cat /tmp/users-check.json
+
+      - name: Show final Kubernetes resources
+        if: always()
+        run: |
+          kubectl get pods
+          kubectl get svc
+          kubectl get deployment
