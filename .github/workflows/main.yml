@@ -80,9 +80,14 @@ jobs:
           echo "Users response:"
           cat /tmp/users-check.json
 
-      - name: Show final Kubernetes resources
+      - name: Preserve cluster and images
         if: always()
         run: |
-          kubectl get pods
-          kubectl get svc
-          kubectl get deployment
+          echo "Keeping the Kind cluster, containers, and Docker images running on this runner."
+          kind get clusters || true
+          kubectl get nodes || true
+          kubectl get pods || true
+          kubectl get svc || true
+          kubectl get deployment || true
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || true
+          docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep -E 'tanuja-build|db' || true
