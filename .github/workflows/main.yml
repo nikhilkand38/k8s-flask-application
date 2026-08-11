@@ -30,6 +30,7 @@ jobs:
         uses: helm/kind-action@v1
         with:
           cluster_name: dev-cluster
+          skipCleanup: true
 
       - name: Load images into Kind
         run: |
