@@ -79,6 +79,18 @@ jobs:
           echo "Users response:"
           cat /tmp/users-check.json
 
+      - name: Start persistent port-forward
+        if: always()
+        run: |
+          nohup kubectl port-forward service/tanuja-service 5000:5000 --address=0.0.0.0 >/tmp/persistent-port-forward.log 2>&1 &
+          echo "Port-forward started in background on port 5000"
+          sleep 2
+          if ps aux | grep "kubectl port-forward" | grep -v grep > /dev/null; then
+            echo "Port-forward process is running"
+          else
+            echo "Warning: Port-forward process may not have started"
+          fi
+
       - name: Preserve cluster and images
         if: always()
         run: |
