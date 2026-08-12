@@ -52,10 +52,7 @@ jobs:
 
       - name: Verify app endpoints
         run: |
-          EC2_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || true)
-          if [ -z "$EC2_IP" ]; then
-            EC2_IP=$(hostname -I | awk '{print $1}')
-          fi
+          EC2_IP=127.0.0.1
           echo "Using EC2 IP: $EC2_IP"
 
           kubectl port-forward service/tanuja-service 30080:5000 --address=0.0.0.0 >/tmp/tanuja-port-forward.log 2>&1 &
