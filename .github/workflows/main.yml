@@ -21,7 +21,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Flask app image
-        run: docker build -t tanuja-build:latest .
+        run: docker build -t flask-build:latest .
 
       - name: Build database image
         run: docker build -t db:latest ./db
@@ -32,7 +32,7 @@ jobs:
 
       - name: Load images into Kind
         run: |
-          kind load docker-image tanuja-build:latest --name dev-cluster
+          kind load docker-image flask-build:latest --name dev-cluster
           kind load docker-image db:latest --name dev-cluster
 
       - name: Set up kubectl
@@ -47,15 +47,15 @@ jobs:
 
       - name: Wait for deployments to be ready
         run: |
-          kubectl rollout status deployment/tanuja-deployment --timeout=180s
-          kubectl rollout status deployment/tanuja-deployment-db --timeout=180s
+          kubectl rollout status deployment/flask-deployment --timeout=180s
+          kubectl rollout status deployment/flask-deployment-db --timeout=180s
 
       - name: Verify app endpoints
         run: |
           EC2_IP=127.0.0.1
           echo "Using EC2 IP: $EC2_IP"
 
-          kubectl port-forward service/tanuja-service 30080:5000 --address=0.0.0.0 >/tmp/tanuja-port-forward.log 2>&1 &
+          kubectl port-forward service/flask-service 30080:5000 --address=0.0.0.0 >/tmp/flask-port-forward.log 2>&1 &
           for i in {1..20}; do
             if curl -sf "http://$EC2_IP:30080/health" >/tmp/health-check.json 2>/dev/null; then
               echo "Health check passed"
@@ -66,7 +66,7 @@ jobs:
 
           if ! curl -sf "http://$EC2_IP:30080/users" >/tmp/users-check.json 2>/dev/null; then
             echo "Users API check failed"
-            cat /tmp/tanuja-port-forward.log
+            cat /tmp/flask-port-forward.log
             exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
       - name: Start persistent port-forward
         if: always()
         run: |
-          nohup kubectl port-forward service/tanuja-service 5000:5000 --address=0.0.0.0 >/tmp/persistent-port-forward.log 2>&1 &
+          nohup kubectl port-forward service/flask-service 5000:5000 --address=0.0.0.0 >/tmp/persistent-port-forward.log 2>&1 &
           echo "Port-forward started in background on port 5000"
           sleep 2
           if ps aux | grep "kubectl port-forward" | grep -v grep > /dev/null; then
@@ -98,4 +98,4 @@ jobs:
           kubectl get svc || true
           kubectl get deployment || true
           docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || true
-          docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep -E 'tanuja-build|db' || true
+          docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep -E 'flask-build|db' || true

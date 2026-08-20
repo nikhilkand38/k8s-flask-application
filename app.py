@@ -12,7 +12,7 @@ def health():
 def users():
     try:
         conn = psycopg2.connect(
-            host=os.getenv("DB_HOST", "tanuja-db"),
+            host=os.getenv("DB_HOST", "flask-db"),
             database=os.getenv("DB_NAME", "appdb"),
             user=os.getenv("DB_USER", "appuser"),
             password=os.getenv("DB_PASSWORD", "password")

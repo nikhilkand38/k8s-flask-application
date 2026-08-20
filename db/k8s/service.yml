@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: tanuja-db
+  name: flask-db
 spec:
   selector:
-    app: tanuja-db
+    app: flask-db
   ports:
     - protocol: TCP
       port: 5432

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tanuja-deployment-db
+  name: flask-deployment-db
   labels:
-    app: tanuja-db
+    app: flask-db
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tanuja-db
+      app: flask-db
   template:
     metadata:
       labels:
-        app: tanuja-db
+        app: flask-db
     spec:
       containers:
-      - name: tanuja-db
+      - name: flask-db
         image: docker.io/library/db:latest
         imagePullPolicy: IfNotPresent
         ports:
